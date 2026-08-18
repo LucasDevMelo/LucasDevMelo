@@ -21,13 +21,13 @@ select public.username_available('jo')      as "muito_curto_false",
 
 \echo '=== 2. grant_membership: primeiro membro ==='
 select * from public.grant_membership(
-  '11111111-1111-1111-1111-111111111111','stripe','cs_aaa',100000,'BRL',null,null);
+  '11111111-1111-1111-1111-111111111111','mercadopago','mp_aaa',100000,'BRL',null,null);
 
 \echo '=== 3. idempotencia: MESMO evento reentregue 3x ==='
 select * from public.grant_membership(
-  '11111111-1111-1111-1111-111111111111','stripe','cs_aaa',100000,'BRL',null,null);
+  '11111111-1111-1111-1111-111111111111','mercadopago','mp_aaa',100000,'BRL',null,null);
 select * from public.grant_membership(
-  '11111111-1111-1111-1111-111111111111','stripe','cs_aaa',100000,'BRL',null,null);
+  '11111111-1111-1111-1111-111111111111','mercadopago','mp_aaa',100000,'BRL',null,null);
 
 \echo '--> membership deve ter 1 linha, amount ainda 100000, contador em 1'
 select count(*) as memberships, max(member_number) as numero, max(amount_paid) as valor
@@ -37,12 +37,12 @@ select count(*) as payments from public.payments;
 
 \echo '=== 4. referral: pedro entra pelo link do membro 1 ==='
 select * from public.grant_membership(
-  '22222222-2222-2222-2222-222222222222','stripe','cs_bbb',100000,'BRL','0001',null);
+  '22222222-2222-2222-2222-222222222222','mercadopago','mp_bbb',100000,'BRL','0001',null);
 select referrer_id, referred_user_id from public.referrals;
 
 \echo '=== 5. referral por username tambem funciona ==='
 select * from public.grant_membership(
-  '33333333-3333-3333-3333-333333333333','stripe','cs_ccc',100000,'BRL','joaosilva',null);
+  '33333333-3333-3333-3333-333333333333','mercadopago','mp_ccc',100000,'BRL','joaosilva',null);
 select count(*) as total_referrals_do_joao from public.referrals
  where referrer_id = '11111111-1111-1111-1111-111111111111';
 
@@ -51,7 +51,7 @@ insert into auth.users (id,email) values ('44444444-4444-4444-4444-444444444444'
 insert into public.users (id,email,username,display_name)
   values ('44444444-4444-4444-4444-444444444444','ana@x.com','anasouza','Ana Souza');
 select member_number from public.grant_membership(
-  '44444444-4444-4444-4444-444444444444','stripe','cs_ddd',100000,'BRL','9999',null);
+  '44444444-4444-4444-4444-444444444444','mercadopago','mp_ddd',100000,'BRL','9999',null);
 select count(*) as referrals_total from public.referrals;
 
 \echo '=== 7. badges automaticas ==='
@@ -61,7 +61,7 @@ select u.username, string_agg(ub.badge_id, ', ' order by ub.badge_id) as badges
 
 \echo '=== 8. upgrade soma o valor e sobe o tier ==='
 select * from public.grant_membership(
-  '11111111-1111-1111-1111-111111111111','stripe','cs_upgrade',900000,'BRL',null,null);
+  '11111111-1111-1111-1111-111111111111','mercadopago','mp_upgrade',900000,'BRL',null,null);
 select member_number, tier, amount_paid from public.memberships
  where user_id = '11111111-1111-1111-1111-111111111111';
 \echo '--> numero de membro NAO pode ter mudado, e badge whale deve aparecer'

@@ -17,11 +17,22 @@ ROOT="$HERE/../.."
 
 psqlc() { psql -h "$SOCK" -p "$PGPORT" -U postgres "$@"; }
 
+# initdb/postgres se recusam a rodar como root; quando for o caso, delegamos
+# para o usuario postgres.
+if [ "$(id -u)" -eq 0 ]; then
+  run_pg() { su postgres -s /bin/bash -c "$1"; }
+  own() { mkdir -p "$1"; chown -R postgres:postgres "$1"; }
+else
+  run_pg() { bash -c "$1"; }
+  own() { mkdir -p "$1"; }
+fi
+
 if ! pg_isready -h "$SOCK" -p "$PGPORT" >/dev/null 2>&1; then
   echo "==> subindo Postgres em $PGDATA"
   rm -rf "$PGDATA"
-  "$PGBIN/initdb" -D "$PGDATA" -A trust -U postgres >/dev/null
-  "$PGBIN/pg_ctl" -D "$PGDATA" -o "-p $PGPORT -k $SOCK" -l /tmp/r1k-pg.log start >/dev/null
+  own "$PGDATA"
+  run_pg "$PGBIN/initdb -D $PGDATA -A trust -U postgres" >/dev/null
+  run_pg "$PGBIN/pg_ctl -D $PGDATA -o '-p $PGPORT -k $SOCK' -l /tmp/r1k-pg.log start" >/dev/null
   sleep 2
 fi
 
@@ -41,7 +52,10 @@ psqlc -d r1k_test -v ON_ERROR_STOP=1 -f "$HERE/01_domain.sql"
 echo "==> 02_rls.sql"
 psqlc -d r1k_test -f "$HERE/02_rls.sql"
 
-echo "==> 03_concurrency: 40 compras simultaneas + 20 reentregas"
+echo "==> 04_intents.sql"
+psqlc -d r1k_test -f "$HERE/04_intents.sql"
+
+echo "==> 05_concurrency: 40 compras simultaneas + 20 reentregas"
 psqlc -d r1k_test -q -c "
   truncate public.memberships, public.payments, public.referrals,
            public.user_badges, public.audit_log restart identity cascade;
@@ -57,10 +71,10 @@ psqlc -d r1k_test -q -c "
 for i in $(seq 1 40); do
   uuid="00000000-0000-0000-0000-$(printf '%012d' "$i")"
   psqlc -d r1k_test -q -c \
-    "select public.grant_membership('$uuid','stripe','cc_$i',100000,'BRL',null,null);" >/dev/null 2>&1 &
+    "select public.grant_membership('$uuid','mercadopago','mp_c$i',100000,'BRL',null,null);" >/dev/null 2>&1 &
   if [ $((i % 2)) -eq 0 ]; then
     psqlc -d r1k_test -q -c \
-      "select public.grant_membership('$uuid','stripe','cc_$i',100000,'BRL',null,null);" >/dev/null 2>&1 &
+      "select public.grant_membership('$uuid','mercadopago','mp_c$i',100000,'BRL',null,null);" >/dev/null 2>&1 &
   fi
 done
 wait
@@ -76,4 +90,4 @@ select count(*)                        as memberships,
 -- esperado: 40 | 40 | 1 | 40 | 0 | 4000000"
 
 echo
-echo "==> fim. para derrubar: $PGBIN/pg_ctl -D $PGDATA stop"
+echo "==> fim. para derrubar: pg_ctl -D $PGDATA stop"

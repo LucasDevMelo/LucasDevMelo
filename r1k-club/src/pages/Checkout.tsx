@@ -19,7 +19,7 @@ const ERROR_COPY: Record<string, string> = {
   invalid_display_name: 'Coloque seu nome como quer que apareça no certificado.',
   rate_limited: 'Muitas tentativas. Espere um minuto e tente de novo.',
   blocked: 'Esta conta não pode entrar no clube.',
-  demo_mode: 'Modo demonstração: o checkout precisa do Supabase e do Stripe configurados.',
+  demo_mode: 'Modo demonstração: o checkout precisa do Supabase e do Mercado Pago configurados.',
 }
 
 /** Secao 3 — o fluxo tem que ser ridiculamente simples. */
@@ -87,7 +87,7 @@ export function Checkout() {
         tier,
         ref,
       })
-      // Sai do SPA: o Stripe assume daqui.
+      // Sai do SPA: o Checkout Pro do Mercado Pago assume daqui.
       window.location.assign(url)
     } catch (err) {
       const code = err instanceof Error ? err.message : 'unknown'
@@ -195,8 +195,8 @@ export function Checkout() {
         </Button>
 
         <p className="text-center text-xs leading-relaxed text-white/30">
-          Pagamento processado pelo Stripe. Seu número de membro é gerado no servidor no momento em
-          que o pagamento é confirmado.
+          Pagamento processado pelo Mercado Pago — Pix, boleto ou cartão. Seu número de membro é
+          gerado no servidor no momento em que o pagamento é confirmado.
         </p>
 
         {!isConfigured && (

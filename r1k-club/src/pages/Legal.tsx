@@ -7,7 +7,7 @@ const TERMS = [
   ],
   [
     'Pagamento',
-    'Cobrança única, processada pelo Stripe. Não guardamos dados de cartão. O acesso é liberado somente após a confirmação do pagamento pelo provedor — nunca com base em qualquer ação feita no navegador.',
+    'Cobrança única, processada pelo Mercado Pago (Pix, boleto ou cartão). Não guardamos dados de cartão. O acesso é liberado somente após a confirmação do pagamento pelo provedor — nunca com base em qualquer ação feita no navegador. Pagamentos por boleto podem levar até 3 dias úteis para compensar; o número de membro é atribuído na confirmação, não na emissão do boleto.',
   ],
   [
     'Número de membro',
@@ -30,7 +30,7 @@ const TERMS = [
 const PRIVACY = [
   [
     'Dados que coletamos',
-    'Nome de exibição, username e e-mail (fornecidos por você) e dados de pagamento processados pelo Stripe — recebemos apenas o identificador e o status da transação, nunca o número do cartão.',
+    'Nome de exibição, username e e-mail (fornecidos por você) e dados de pagamento processados pelo Mercado Pago — recebemos apenas o identificador, o valor e o status da transação, nunca o número do cartão.',
   ],
   [
     'Como usamos',

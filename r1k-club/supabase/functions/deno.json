@@ -1,0 +1,11 @@
+{
+  "$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
+  "nodeModulesDir": "none",
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.45.4"
+  },
+  "tasks": {
+    "check": "deno check --quiet **/index.ts _shared/*.ts",
+    "test": "deno test --allow-env _shared/"
+  }
+}

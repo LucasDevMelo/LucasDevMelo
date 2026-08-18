@@ -141,8 +141,11 @@ export async function createCheckout(input: CheckoutInput): Promise<{ url: strin
   return callFunction<{ url: string }>('create-checkout', { ...input })
 }
 
-export interface SessionStatus {
-  status: 'paid' | 'pending' | 'expired' | 'unknown'
+export interface PaymentStatus {
+  status: 'paid' | 'pending' | 'failed' | 'unknown'
+  /** presente em 'pending': pix, ticket (boleto), credit_card… */
+  method?: string
+  detail?: string
   member?: {
     username: string
     display_name: string
@@ -153,7 +156,7 @@ export interface SessionStatus {
   }
 }
 
-export async function fetchSessionStatus(sessionId: string): Promise<SessionStatus> {
+export async function fetchPaymentStatus(paymentId: string): Promise<PaymentStatus> {
   if (!isConfigured) {
     await sleep(900)
     return {
@@ -168,7 +171,7 @@ export async function fetchSessionStatus(sessionId: string): Promise<SessionStat
       },
     }
   }
-  return callFunction<SessionStatus>('session-status', { session_id: sessionId })
+  return callFunction<PaymentStatus>('payment-status', { payment_id: paymentId })
 }
 
 export async function joinWaitlist(email: string, ref: string | null, source: string) {

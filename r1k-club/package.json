@@ -7,8 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit false --emitDeclarationOnly false --pretty",
-    "lint": "tsc -b"
+    "lint": "tsc -b",
+    "check:functions": "deno check --config supabase/functions/deno.json supabase/functions/*/index.ts supabase/functions/_shared/*.ts",
+    "test:functions": "deno test --allow-env --config supabase/functions/deno.json supabase/functions/_shared/",
+    "test:db": "./supabase/tests/run.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -25,6 +27,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
+    "deno": "^2.9.5",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2",

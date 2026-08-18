@@ -63,6 +63,10 @@ export interface AdminMetrics {
   payments_failed: number
   referrals: number
   waitlist: number
+  /** checkouts iniciados (intenções criadas) */
+  checkouts: number
+  checkouts_paid: number
+  /** checkouts_paid / checkouts */
   conversion: number
   members_by_day: { day: string; count: number }[]
 }

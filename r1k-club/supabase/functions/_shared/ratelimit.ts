@@ -1,4 +1,4 @@
-import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export function clientIp(req: Request): string {
   const fwd = req.headers.get('x-forwarded-for')

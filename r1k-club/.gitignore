@@ -19,3 +19,6 @@ npm-debug.log*
 supabase/.branches
 supabase/.temp
 *.tsbuildinfo
+
+# cache do Deno das Edge Functions
+supabase/functions/node_modules

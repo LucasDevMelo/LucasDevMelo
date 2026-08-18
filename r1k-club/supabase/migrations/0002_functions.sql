@@ -167,7 +167,7 @@ begin
   -- webhook nao podem tentar criar duas memberships para a mesma pessoa.
   perform pg_advisory_xact_lock(hashtextextended(p_user_id::text, 0));
 
-  -- 0) Idempotencia. O Stripe reentrega o mesmo evento sempre que recebe 5xx
+  -- 0) Idempotencia. O gateway reentrega o mesmo evento sempre que recebe 5xx
   --    (e as vezes sem motivo). Se esta transacao ja foi processada, devolve o
   --    estado atual sem tocar em nada: o valor NAO pode ser somado de novo.
   select p.id into v_payment_id

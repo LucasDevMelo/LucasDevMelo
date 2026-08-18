@@ -85,24 +85,29 @@ function Metrics() {
     )
   }
 
-  const cards: [string, string][] = [
+  const cards: [string, string, string?][] = [
     ['Receita', money(data.revenue_cents)],
     ['Membros pagos', String(data.members)],
     ['Usuários', String(data.users)],
-    ['Conversão', `${(data.conversion * 100).toFixed(1)}%`],
+    [
+      'Conversão',
+      `${(data.conversion * 100).toFixed(1)}%`,
+      `${data.checkouts_paid} de ${data.checkouts} checkouts`,
+    ],
+    ['Checkouts iniciados', String(data.checkouts)],
     ['Referrals', String(data.referrals)],
     ['Lista de espera', String(data.waitlist)],
-    ['Pagamentos ok', String(data.payments_paid)],
-    ['Falhas', String(data.payments_failed)],
+    ['Pagamentos recusados', String(data.payments_failed)],
   ]
 
   return (
     <>
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map(([label, value]) => (
+        {cards.map(([label, value, hint]) => (
           <div key={label} className="surface px-5 py-6">
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">{label}</p>
             <p className="mt-2 font-display text-2xl text-gold-100">{value}</p>
+            {hint && <p className="mt-1 text-[11px] text-white/30">{hint}</p>}
           </div>
         ))}
       </div>

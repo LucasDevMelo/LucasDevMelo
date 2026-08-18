@@ -62,7 +62,7 @@ export function pageview(path: string): void {
 
 /**
  * Origem do usuario (secao 13: TikTok / Instagram / direto). Guardamos na
- * primeira visita para nao perder a atribuicao depois do redirect do Stripe.
+ * primeira visita para nao perder a atribuicao depois do redirect do Mercado Pago.
  */
 const ATTR_KEY = 'r1k:attribution'
 

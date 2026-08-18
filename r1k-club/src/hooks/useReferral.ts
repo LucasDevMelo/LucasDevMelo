@@ -6,7 +6,7 @@ const KEY = 'r1k:ref'
 
 /**
  * Guarda o codigo de indicacao (secao 10). Precisa sobreviver ao redirect do
- * Stripe, entao fica no localStorage e nao so na URL.
+ * Mercado Pago, entao fica no localStorage e nao so na URL.
  */
 export function useReferral(): string | null {
   const [params] = useSearchParams()

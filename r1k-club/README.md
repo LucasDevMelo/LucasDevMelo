@@ -14,7 +14,7 @@ Um clube digital para quem tem coragem de gastar R$1.000 para provar que pode.
 |---|---|
 | Landing | `src/pages/Landing.tsx` |
 | Checkout | `src/pages/Checkout.tsx` + `supabase/functions/create-checkout` |
-| Pagamento | `supabase/functions/stripe-webhook` |
+| Pagamento | `supabase/functions/mercadopago-webhook` |
 | Member number | `grant_membership()` em `supabase/migrations/0002_functions.sql` |
 | Onboarding | `src/pages/Welcome.tsx` |
 | Perfil público | `src/pages/Profile.tsx` (`/u/:username`) |
@@ -71,30 +71,35 @@ Deploy das funções:
 
 ```bash
 supabase functions deploy create-checkout
-supabase functions deploy session-status
+supabase functions deploy payment-status
 supabase functions deploy waitlist
-supabase functions deploy stripe-webhook --no-verify-jwt   # o Stripe não manda JWT
+supabase functions deploy mercadopago-webhook --no-verify-jwt   # o MP não manda JWT
 ```
 
-### 2. Stripe
+### 2. Mercado Pago
 
-Crie um endpoint de webhook apontando para:
+Em **Suas integrações → sua aplicação**:
 
-```
-https://SEU_PROJETO.supabase.co/functions/v1/stripe-webhook
-```
-
-Eventos a assinar:
+1. **Credenciais** → copie o *Access Token*. Comece com o de teste (`TEST-...`);
+   o app detecta e usa o `sandbox_init_point` sozinho.
+2. **Webhooks → Configurar notificações** → URL:
 
 ```
-checkout.session.completed
-checkout.session.async_payment_succeeded
-checkout.session.async_payment_failed
-payment_intent.payment_failed
-charge.refunded
+https://SEU_PROJETO.supabase.co/functions/v1/mercadopago-webhook
 ```
 
-Copie o *signing secret* (`whsec_...`) para `STRIPE_WEBHOOK_SECRET`.
+   Evento a marcar: **Pagamentos** (`payment`).
+
+3. Copie a **assinatura secreta** que o painel mostra ao salvar e coloque em
+   `MERCADOPAGO_WEBHOOK_SECRET`. Sem ela o webhook rejeita tudo com 401 — que é o
+   comportamento correto, mas nenhum pagamento é liberado.
+
+> A assinatura é por aplicação **e por ambiente**: a de teste não vale em produção.
+
+O checkout usa **Checkout Pro** (redirect), o que já traz Pix, boleto e cartão sem
+você tocar em dado de cartão. Se um dia quiser o formulário dentro do site, o
+caminho é o Checkout Bricks — só `create-checkout` e a tela de checkout mudam; o
+webhook e o banco continuam iguais.
 
 ### 3. Vercel
 
@@ -132,11 +137,19 @@ O produto movimenta R$1.000 por transação. As decisões estruturais:
   incrementa uma linha travada em `member_counter` dentro da mesma transação que
   cria a membership. Sem gaps, sem colisão, sem chance de manipulação pelo cliente.
 - **Confirmação server-side.** A única forma de virar membro é `grant_membership()`,
-  chamada pelo webhook depois da verificação de assinatura do Stripe. O frontend
-  nunca libera nada.
+  chamada pelo webhook depois de (a) validar o HMAC do `x-signature` e (b) consultar
+  o pagamento na API do Mercado Pago. Nada do corpo da notificação é tratado como
+  verdade — dele sai só o id. O frontend nunca libera nada.
+- **`external_reference` não é adivinhável.** Ele carrega o id de um
+  `checkout_intent` criado no servidor, não o `user_id`. Isso fecha o ataque de
+  apontar um pagamento de R$0,01 para o próprio id: a intenção define de quem é o
+  pagamento e congela o valor esperado, e valor menor que o combinado não libera
+  nada.
 - **Idempotência.** `payments` tem `unique (provider, transaction_id)`. Reentregas
-  do webhook — que o Stripe faz por padrão quando recebe 5xx — caem no `ON CONFLICT`
-  e devolvem o estado existente em vez de emitir um segundo número.
+  do webhook — que o Mercado Pago faz quando recebe 5xx — devolvem o estado existente
+  em vez de emitir um segundo número ou somar o valor de novo.
+- **Replay barrado.** A verificação de assinatura recusa notificações com
+  `ts` fora de uma janela de 10 minutos.
 - **Concorrência.** `pg_advisory_xact_lock` por usuário serializa duas entregas
   simultâneas do mesmo evento.
 - **O preço não vem do cliente.** O checkout recebe só o id do tier; o valor sai de
@@ -166,7 +179,7 @@ src/
   pages/         landing, checkout, welcome, profile, ranking, dashboard, admin…
 supabase/
   migrations/    schema, funções de domínio, RLS, seed do admin
-  functions/     create-checkout, stripe-webhook, session-status, waitlist
+  functions/     create-checkout, mercadopago-webhook, payment-status, waitlist
 api/             preview de link para crawlers (Vercel)
 ```
 
@@ -188,21 +201,38 @@ O que ela verifica:
 - referral por número e por username, e código inválido sem criar lixo;
 - badges automáticas e upgrade de tier preservando o member number;
 - rate limiting;
+- **intenções de checkout**: R$0,01 numa entrada de R$1.000 é recusado,
+  `external_reference` forjado é recusado, e a tabela é invisível para
+  `anon`/`authenticated`;
 - **RLS**: `anon` bloqueado em `users`/`payments`/`memberships`/`audit_log`/
   `member_counter`, membro comum sem conseguir se auto-promover a admin, trocar o
   próprio username ou editar outra conta;
 - **concorrência**: 40 compras simultâneas com 20 reentregas duplicadas →
   40 números distintos, 1 a 40, zero gaps, R$40.000 cobrados exatamente.
 
+E a validação de assinatura do webhook, que roda em Deno:
+
+```bash
+npm run test:functions     # testes da assinatura do webhook
+npm run check:functions    # typecheck das Edge Functions
+```
+
+Cobre o formato do manifesto, um valor de referência gerado por uma implementação
+independente (Node), e as recusas: `data.id` trocado mantendo a assinatura, segredo
+errado, replay antigo, header ausente ou malformado, segredo não configurado.
+
 ---
 
 ## Comandos
 
 ```bash
-npm run dev        # servidor de desenvolvimento
-npm run build      # typecheck + build de produção
-npm run preview    # serve o build
-npm run lint       # typecheck
+npm run dev              # servidor de desenvolvimento
+npm run build            # typecheck + build de produção
+npm run preview          # serve o build
+npm run lint             # typecheck do frontend
+npm run check:functions  # typecheck das Edge Functions (Deno)
+npm run test:functions   # testes da assinatura do webhook
+npm run test:db          # migrations + suíte SQL num Postgres descartável
 ```
 
 ---

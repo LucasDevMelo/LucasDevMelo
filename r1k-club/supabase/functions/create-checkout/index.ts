@@ -2,21 +2,19 @@
 // create-checkout
 //
 // Recebe nome / username / e-mail, reserva o username, garante o usuario no
-// Auth e devolve a URL do Stripe Checkout. O valor cobrado vem SEMPRE da
-// tabela de tiers do servidor — o cliente so escolhe o id do tier.
+// Auth, registra uma intencao de checkout e devolve a URL do Checkout Pro.
+//
+// O valor cobrado vem SEMPRE da tabela de tiers do servidor — o cliente so
+// escolhe o id do tier. A intencao congela esse valor para o webhook conferir.
 // =============================================================================
-import Stripe from 'https://esm.sh/stripe@16.12.0?target=deno'
 import { adminClient } from '../_shared/supabase.ts'
 import { json, preflight } from '../_shared/cors.ts'
 import { clientIp, rateLimit } from '../_shared/ratelimit.ts'
 import { resolveTier } from '../_shared/tiers.ts'
-
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2024-06-20',
-  httpClient: Stripe.createFetchHttpClient(),
-})
+import { checkoutUrl, createPreference } from '../_shared/mercadopago.ts'
 
 const SITE_URL = Deno.env.get('SITE_URL') ?? 'http://localhost:5173'
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
@@ -120,44 +118,44 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ---- sessao de checkout -------------------------------------------------
-    const session = await stripe.checkout.sessions.create(
-      {
-        mode: 'payment',
-        customer_email: email,
-        client_reference_id: userId,
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: 'brl',
-              unit_amount: tier.amount,
-              product_data: {
-                name: `R$1K CLUB — ${tier.label}`,
-                description: 'Entrada no clube. Numero de membro, perfil publico e certificado.',
-              },
-            },
-          },
-        ],
-        metadata: { user_id: userId!, tier: tier.id, ref: ref ?? '' },
-        payment_intent_data: {
-          metadata: { user_id: userId!, tier: tier.id, ref: ref ?? '' },
-        },
-        success_url: `${SITE_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${SITE_URL}/checkout?canceled=1`,
-      },
-      // Evita cobrar duas vezes se o usuario clicar duas vezes no botao.
-      { idempotencyKey: `checkout:${userId}:${tier.id}:${Math.floor(Date.now() / 900_000)}` },
-    )
+    // ---- intencao de checkout -----------------------------------------------
+    // O id dela vira o external_reference. E o que impede alguem de forjar um
+    // pagamento apontando para o proprio user_id.
+    const { data: intent, error: intentErr } = await db
+      .from('checkout_intents')
+      .insert({ user_id: userId, tier: tier.id, amount: tier.amount, ref })
+      .select('id')
+      .single()
+
+    if (intentErr) throw intentErr
+
+    // ---- preferencia do Mercado Pago ----------------------------------------
+    const preference = await createPreference({
+      externalReference: intent.id,
+      title: `R$1K CLUB — ${tier.label}`,
+      description: 'Entrada no clube. Número de membro, perfil público e certificado.',
+      amountCents: tier.amount,
+      payerEmail: email,
+      metadata: { user_id: userId!, tier: tier.id, ref: ref ?? '', intent_id: intent.id },
+      successUrl: `${SITE_URL}/welcome`,
+      failureUrl: `${SITE_URL}/checkout?canceled=1`,
+      pendingUrl: `${SITE_URL}/welcome`,
+      notificationUrl: `${SUPABASE_URL}/functions/v1/mercadopago-webhook`,
+    })
+
+    await db
+      .from('checkout_intents')
+      .update({ preference_id: preference.id })
+      .eq('id', intent.id)
 
     await db.from('audit_log').insert({
       actor_id: userId,
       action: 'checkout.created',
-      target: session.id,
-      metadata: { tier: tier.id, amount: tier.amount, ip, ref },
+      target: intent.id,
+      metadata: { tier: tier.id, amount: tier.amount, preference_id: preference.id, ip, ref },
     })
 
-    return json({ url: session.url, session_id: session.id }, 200, origin)
+    return json({ url: checkoutUrl(preference), intent_id: intent.id }, 200, origin)
   } catch (err) {
     console.error('create-checkout', err)
     return json({ error: 'internal_error' }, 500, origin)

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, ButtonLink, Section, Spinner } from '@/components/ui'
 import { ShareSheet } from '@/components/ShareSheet'
 import { TierPill } from '@/components/MemberBits'
-import { fetchSessionStatus } from '@/lib/api'
+import { fetchPaymentStatus } from '@/lib/api'
 import { memberTag, money } from '@/lib/format'
 import { useCountUp } from '@/hooks/useCountUp'
 import { track, identify } from '@/lib/analytics'
@@ -21,18 +21,27 @@ const SEQUENCE: [Step, number][] = [
   ['status', 2400],
 ]
 
-/** Secao 4 — a primeira experiencia precisa ser absurda. */
+/**
+ * Secao 4 — a primeira experiencia precisa ser absurda.
+ *
+ * O Mercado Pago volta para ca com ?payment_id=&status=&external_reference=…
+ * (e o alias antigo collection_id). Nada disso e tratado como verdade: o
+ * payment_id so serve para perguntar o estado real a Edge Function.
+ */
 export function Welcome() {
   const [params] = useSearchParams()
-  const sessionId = params.get('session_id')
+
+  // O MP as vezes devolve a string "null" quando o pagamento ainda nao existe.
+  const raw = params.get('payment_id') ?? params.get('collection_id')
+  const paymentId = raw && raw !== 'null' && /^[0-9]+$/.test(raw) ? raw : null
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['session-status', sessionId],
-    queryFn: () => fetchSessionStatus(sessionId!),
-    enabled: Boolean(sessionId),
-    // O webhook normalmente chega em segundos, mas pix/boleto podem levar
-    // minutos: depois das primeiras tentativas o intervalo abre para nao
-    // martelar a funcao (nem bater no rate limit).
+    queryKey: ['payment-status', paymentId],
+    queryFn: () => fetchPaymentStatus(paymentId!),
+    enabled: Boolean(paymentId),
+    // Cartao confirma em segundos; Pix costuma levar alguns e boleto pode levar
+    // dias. Depois das primeiras tentativas o intervalo abre para nao martelar
+    // a funcao (nem bater no rate limit).
     refetchInterval: (query) => {
       if (query.state.data?.status !== 'pending') return false
       return query.state.dataUpdateCount > 15 ? 15_000 : 2_000
@@ -40,12 +49,16 @@ export function Welcome() {
     retry: 3,
   })
 
-  if (!sessionId) {
+  if (!paymentId) {
     return (
       <Section className="max-w-lg text-center">
         <h1 className="font-display text-3xl">Nada para mostrar aqui.</h1>
-        <p className="mt-4 text-sm text-white/45">
-          Esta página aparece logo depois do pagamento.
+        <p className="mt-4 text-sm leading-relaxed text-white/45">
+          Esta página aparece logo depois do pagamento. Se você já pagou e caiu aqui,{' '}
+          <Link to="/login" className="focus-gold text-gold-300/80 underline">
+            entre com seu e-mail
+          </Link>{' '}
+          — a liberação não depende desta tela.
         </p>
         <div className="mt-10">
           <ButtonLink to="/">Voltar para a landing</ButtonLink>
@@ -55,20 +68,37 @@ export function Welcome() {
   }
 
   if (isLoading || data?.status === 'pending') {
-    return <Waiting />
+    return <Waiting method={data?.method} />
   }
 
-  if (isError || data?.status === 'expired' || data?.status === 'unknown' || !data?.member) {
+  if (isError || data?.status === 'unknown' || data?.status === 'failed' || !data?.member) {
+    const recusado = data?.status === 'failed'
     return (
       <Section className="max-w-lg text-center">
-        <h1 className="font-display text-3xl">Não consegui confirmar esse pagamento.</h1>
+        <h1 className="font-display text-3xl">
+          {recusado ? 'O pagamento não passou.' : 'Não consegui confirmar esse pagamento.'}
+        </h1>
         <p className="mt-4 text-sm leading-relaxed text-white/45">
-          Se o valor saiu da sua conta, ele está registrado — o acesso é liberado assim que a
-          confirmação chega. Tente recarregar; se persistir, fale com o suporte com o código{' '}
-          <code className="font-mono text-gold-300">{sessionId.slice(-12)}</code>.
+          {recusado ? (
+            <>
+              O Mercado Pago recusou a cobrança
+              {data?.detail ? ` (${data.detail})` : ''}. Nada foi cobrado — dá para tentar de novo
+              com outro método.
+            </>
+          ) : (
+            <>
+              Se o valor saiu da sua conta, ele está registrado — o acesso é liberado assim que a
+              confirmação chega, mesmo que você feche esta página. Se persistir, fale com o suporte
+              com o código <code className="font-mono text-gold-300">{paymentId}</code>.
+            </>
+          )}
         </p>
         <div className="mt-10 flex justify-center gap-3">
-          <Button onClick={() => refetch()}>Tentar de novo</Button>
+          {recusado ? (
+            <ButtonLink to="/checkout">Tentar de novo</ButtonLink>
+          ) : (
+            <Button onClick={() => refetch()}>Verificar de novo</Button>
+          )}
           <ButtonLink to="/" variant="ghost">
             Início
           </ButtonLink>
@@ -81,13 +111,24 @@ export function Welcome() {
 }
 
 // ---------------------------------------------------------------------------
-function Waiting() {
+function Waiting({ method }: { method?: string }) {
+  const boleto = method === 'ticket' || method === 'bank_transfer'
+
   return (
     <Section className="flex max-w-lg flex-col items-center py-32 text-center">
       <Spinner className="h-8 w-8 text-gold-300" />
-      <p className="mt-8 font-display text-2xl">Confirmando o pagamento…</p>
-      <p className="mt-3 text-sm text-white/40">
-        Não feche esta página. Seu número está sendo reservado.
+      <p className="mt-8 font-display text-2xl">
+        {boleto ? 'Aguardando a compensação…' : 'Confirmando o pagamento…'}
+      </p>
+      <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/40">
+        {boleto ? (
+          <>
+            Boleto pode levar até 3 dias úteis. Pode fechar a página: quando o Mercado Pago
+            confirmar, seu número é gerado automaticamente e você entra pelo login com e-mail.
+          </>
+        ) : (
+          <>Não feche esta página. Seu número está sendo reservado.</>
+        )}
       </p>
     </Section>
   )
@@ -97,7 +138,7 @@ function Waiting() {
 function Ceremony({
   member,
 }: {
-  member: NonNullable<Awaited<ReturnType<typeof fetchSessionStatus>>['member']>
+  member: NonNullable<Awaited<ReturnType<typeof fetchPaymentStatus>>['member']>
 }) {
   const [step, setStep] = useState<Step>('congrats')
   const [copied, setCopied] = useState(false)
@@ -231,7 +272,7 @@ function Ceremony({
       </div>
 
       <p className="mt-8 text-center text-xs text-white/30">
-        Enviamos o recibo para o seu e-mail. Para acessar sua conta depois, use{' '}
+        O Mercado Pago envia o comprovante para o seu e-mail. Para acessar sua conta depois, use{' '}
         <Link to="/login" className="focus-gold text-gold-300/80 underline">
           o login por link mágico
         </Link>

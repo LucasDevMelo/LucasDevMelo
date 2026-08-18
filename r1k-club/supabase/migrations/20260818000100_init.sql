@@ -9,8 +9,20 @@
 --   * Liberar membro so acontece server-side, a partir do webhook de pagamento.
 -- =============================================================================
 
-create extension if not exists "pgcrypto";
-create extension if not exists "citext";
+-- O tipo citext vive no schema `extensions`; sem isto o DDL nao o resolve.
+set search_path = public, extensions;
+
+create schema if not exists extensions;
+
+-- pgcrypto pode ficar em `extensions` (o Supabase ja o instala la).
+create extension if not exists "pgcrypto" with schema extensions;
+
+-- citext, nao. O operador `citext = text` precisa estar visivel para o role
+-- anon nas consultas do PostgREST — e o search_path do anon nao inclui
+-- `extensions` de forma garantida. Fora do public, a comparacao cai
+-- silenciosamente num `text = text` case-sensitive e /u/JoaoSilva vira 404
+-- enquanto /u/joaosilva funciona. Sem erro, so resultado errado.
+create extension if not exists "citext" with schema public;
 
 -- ---------------------------------------------------------------------------
 -- Tipos

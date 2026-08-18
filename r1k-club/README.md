@@ -54,7 +54,7 @@ de existir backend. O checkout real fica desativado.
 
 ```bash
 supabase link --project-ref SEU_PROJETO
-supabase db push          # aplica as 4 migrations de supabase/migrations
+supabase db push          # aplica as 5 migrations de supabase/migrations
 ```
 
 Configure os segredos das Edge Functions:
@@ -73,7 +73,7 @@ Deploy das funções:
 supabase functions deploy create-checkout
 supabase functions deploy payment-status
 supabase functions deploy waitlist
-supabase functions deploy mercadopago-webhook --no-verify-jwt   # o MP não manda JWT
+supabase functions deploy mercadopago-webhook   # verify_jwt=false vem do config.toml
 ```
 
 ### 2. Mercado Pago
@@ -178,7 +178,9 @@ src/
   lib/           supabase, api, analytics, tiers, formatação, dados de demo
   pages/         landing, checkout, welcome, profile, ranking, dashboard, admin…
 supabase/
-  migrations/    schema, funções de domínio, RLS, seed do admin
+  config.toml    verify_jwt do webhook (o Mercado Pago não manda JWT)
+  migrations/    schema, funções de domínio, RLS, checkout intents
+  tests/         suíte SQL rodável num Postgres descartável
   functions/     create-checkout, mercadopago-webhook, payment-status, waitlist
 api/             preview de link para crawlers (Vercel)
 ```
@@ -201,6 +203,8 @@ O que ela verifica:
 - referral por número e por username, e código inválido sem criar lixo;
 - badges automáticas e upgrade de tier preservando o member number;
 - rate limiting;
+- busca de perfil case-insensitive (`/u/JoaoSilva` e `/u/joaosilva` são a mesma
+  pessoa) — depende do operador `citext` estar visível para o `anon`;
 - **intenções de checkout**: R$0,01 numa entrada de R$1.000 é recusado,
   `external_reference` forjado é recusado, e a tabela é invisível para
   `anon`/`authenticated`;

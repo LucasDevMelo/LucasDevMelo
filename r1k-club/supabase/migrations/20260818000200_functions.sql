@@ -4,6 +4,9 @@
 -- SECURITY DEFINER, chamado apenas pelo service role (webhook do gateway).
 -- =============================================================================
 
+-- O tipo citext vive no schema `extensions`; sem isto o DDL nao o resolve.
+set search_path = public, extensions;
+
 -- ---------------------------------------------------------------------------
 -- helpers
 -- ---------------------------------------------------------------------------
@@ -12,7 +15,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select coalesce(
     (select u.is_admin from public.users u where u.id = auth.uid()),
@@ -42,7 +45,7 @@ create or replace function public.next_member_number()
 returns integer
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_next integer;
@@ -69,7 +72,7 @@ create or replace function public.award_badges(p_user_id uuid)
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_number    integer;
@@ -143,7 +146,7 @@ create or replace function public.grant_membership(
 returns table (member_number integer, tier membership_tier, is_new boolean)
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_tier          membership_tier;
@@ -270,7 +273,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select
     p_username ~ '^[a-zA-Z0-9](?:[a-zA-Z0-9_]{1,18})[a-zA-Z0-9]$'
@@ -288,7 +291,7 @@ returns table (members bigint, spots_left integer, last_member_at timestamptz)
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select
     count(*)::bigint as members,
@@ -308,7 +311,7 @@ returns jsonb
 language plpgsql
 stable
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v jsonb;
@@ -365,7 +368,7 @@ create or replace function public.check_rate_limit(
 returns boolean
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_window timestamptz;
@@ -402,7 +405,7 @@ create or replace function public.admin_set_blocked(p_user_id uuid, p_blocked bo
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 begin
   if not public.is_admin() then

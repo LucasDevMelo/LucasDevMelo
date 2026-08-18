@@ -13,6 +13,17 @@ select count(*) as linhas_visiveis from public.audit_log;
 \echo '-- member_counter (manipular isso = manipular numero de membro)'
 select count(*) as linhas_visiveis from public.member_counter;
 
+\echo '-- busca de perfil e case-insensitive (operador citext visivel para o anon)'
+\echo '   as tres consultas abaixo tem que devolver a MESMA linha'
+select 'minusculo' as caso, username, member_number
+  from public.public_profiles where username = 'joaosilva'
+union all
+select 'MAIUSCULO', username, member_number
+  from public.public_profiles where username = 'JOAOSILVA'
+union all
+select 'CaIxA mIsTa', username, member_number
+  from public.public_profiles where username = 'JoaoSilva';
+
 \echo '-- view publica: DEVE funcionar, e sem coluna de e-mail'
 select username, member_number, tier from public.public_profiles order by member_number limit 3;
 select column_name from information_schema.columns

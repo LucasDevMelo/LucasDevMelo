@@ -1,0 +1,17 @@
+# =============================================================================
+# Configuracao do projeto para a CLI do Supabase.
+#
+# O ponto critico e o verify_jwt do webhook: o Mercado Pago nao manda JWT
+# nenhum. Se essa funcao subir com verificacao ligada, TODA notificacao volta
+# 401 e nenhum pagamento libera membro — sem erro visivel no site. Deixar isso
+# no arquivo evita depender de lembrar a flag na hora do deploy.
+#
+# As outras funcoes ficam com verify_jwt = true (o padrao): o navegador ja
+# manda a anon key, entao a verificacao nao atrapalha e barra chamada sem
+# credencial nenhuma.
+# =============================================================================
+
+project_id = "r1k-club"
+
+[functions.mercadopago-webhook]
+verify_jwt = false

@@ -35,10 +35,14 @@ export async function fetchProfile(username: string): Promise<PublicProfile | nu
     return demo.demoProfile(username)
   }
 
+  // A comparacao ja e case-insensitive no banco (username e citext). O
+  // toLowerCase aqui so mantem a chave do cache do TanStack Query canonica,
+  // para /u/JoaoSilva e /u/joaosilva nao virarem duas entradas.
+  // O comportamento case-insensitive em si tem teste em supabase/tests.
   const { data, error } = await requireSupabase()
     .from('public_profiles')
     .select('*')
-    .eq('username', username)
+    .eq('username', username.toLowerCase())
     .maybeSingle()
 
   if (error) throw error
@@ -54,7 +58,7 @@ export async function fetchProfileBadges(username: string): Promise<PublicBadge[
   const { data, error } = await requireSupabase()
     .from('public_badges')
     .select('*')
-    .eq('username', username)
+    .eq('username', username.toLowerCase())
     .order('sort_order', { ascending: true })
 
   if (error) throw error

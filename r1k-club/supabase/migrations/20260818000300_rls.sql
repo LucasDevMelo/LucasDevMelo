@@ -6,6 +6,9 @@
 -- colunas seguras. E-mail, pagamentos e logs nunca saem para o anon.
 -- =============================================================================
 
+-- O tipo citext vive no schema `extensions`; sem isto o DDL nao o resolve.
+set search_path = public, extensions;
+
 alter table public.users              enable row level security;
 alter table public.memberships        enable row level security;
 alter table public.payments           enable row level security;

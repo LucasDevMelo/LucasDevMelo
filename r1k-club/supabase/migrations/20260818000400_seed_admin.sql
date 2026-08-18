@@ -5,6 +5,9 @@
 -- Auth). Troque o e-mail e execute no SQL Editor.
 -- =============================================================================
 
+-- O tipo citext vive no schema `extensions`; sem isto o DDL nao o resolve.
+set search_path = public, extensions;
+
 -- update public.users
 --    set is_admin = true
 --  where email = 'voce@email.com';

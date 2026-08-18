@@ -13,6 +13,9 @@
 -- De quebra, a tabela mostra os checkouts abandonados (funil da secao 13).
 -- =============================================================================
 
+-- O tipo citext vive no schema `extensions`; sem isto o DDL nao o resolve.
+set search_path = public, extensions;
+
 create table if not exists public.checkout_intents (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references public.users(id) on delete cascade,
@@ -48,7 +51,7 @@ create or replace function public.consume_checkout_intent(
 returns table (user_id uuid, tier membership_tier, ref text, expected_amount bigint)
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_intent public.checkout_intents%rowtype;
@@ -88,7 +91,7 @@ returns jsonb
 language plpgsql
 stable
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v jsonb;

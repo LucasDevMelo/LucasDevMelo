@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), ui-serif, Georgia, serif;
+
+  --color-navy-950: #081630;
+  --color-navy-900: #0d1f3f;
+  --color-navy-800: #132b55;
+  --color-navy-700: #1d3c72;
+  --color-marian-600: #2b5cab;
+  --color-marian-500: #3a6fc4;
+  --color-marian-100: #e3ecf8;
+  --color-marian-50: #f1f5fb;
+  --color-gold-600: #b08d45;
+  --color-gold-500: #c9a45c;
+  --color-gold-300: #e3cc97;
+  --color-gold-100: #f6edd8;
+  --color-cream-50: #fdfbf7;
+  --color-cream-100: #f8f3ea;
+  --color-beige-200: #ece2d0;
+  --color-ink-900: #16213a;
+  --color-ink-600: #4a5670;
+  --color-ink-400: #7c869b;
+
+  --shadow-soft: 0 1px 2px rgba(13, 31, 63, 0.04), 0 8px 24px -8px rgba(13, 31, 63, 0.12);
+  --shadow-lifted: 0 2px 4px rgba(13, 31, 63, 0.05), 0 24px 48px -16px rgba(13, 31, 63, 0.25);
+
+  --animate-twinkle: twinkle 3.2s ease-in-out infinite;
+  --animate-float: float-up 9s linear infinite;
+  --animate-glow: glow 5s ease-in-out infinite;
+  --animate-shimmer: shimmer 7s ease-in-out infinite;
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.25; transform: scale(0.85); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes float-up {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 0.9; }
+    90% { opacity: 0.6; }
+    100% { transform: translateY(-110vh) translateX(20px); opacity: 0; }
+  }
+  @keyframes shimmer {
+    0% { background-position: 100% 0; }
+    60%, 100% { background-position: -50% 0; }
+  }
+  @keyframes glow {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 0.9; transform: scale(1.06); }
+  }
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-cream-50);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-marian-500);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--color-gold-300);
+  color: var(--color-navy-900);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

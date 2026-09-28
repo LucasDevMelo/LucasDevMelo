@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6efe3"/>
+      <stop offset="1" stop-color="#e7d6bd"/>
+    </linearGradient>
+    <linearGradient id="vase" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2a4d8f"/>
+      <stop offset="0.5" stop-color="#4a74bf"/>
+      <stop offset="1" stop-color="#23427c"/>
+    </linearGradient>
+    <radialGradient id="rose" cx="0.4" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#f7c9c3"/>
+      <stop offset="1" stop-color="#d9837d"/>
+    </radialGradient>
+    <radialGradient id="roseW" cx="0.4" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e9dfcf"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <rect x="0" y="760" width="800" height="240" fill="#dcc6a5"/>
+  <ellipse cx="400" cy="800" rx="170" ry="18" fill="#000" opacity="0.08"/>
+  <g stroke="#5b7a4e" stroke-width="7" fill="none" stroke-linecap="round">
+    <path d="M400 620 C390 520 330 440 300 360"/>
+    <path d="M400 620 C400 500 410 400 420 300"/>
+    <path d="M400 620 C420 520 480 450 520 380"/>
+    <path d="M400 620 C380 540 260 500 240 470"/>
+    <path d="M400 620 C430 540 560 520 580 490"/>
+  </g>
+  <g fill="#6f8f5f">
+    <ellipse cx="340" cy="450" rx="34" ry="14" transform="rotate(-35 340 450)"/>
+    <ellipse cx="470" cy="460" rx="34" ry="14" transform="rotate(35 470 460)"/>
+    <ellipse cx="410" cy="420" rx="30" ry="12" transform="rotate(-70 410 420)"/>
+  </g>
+  <g>
+    <circle cx="300" cy="350" r="52" fill="url(#rose)"/>
+    <path d="M280 345 q20 -30 40 0 q-20 25 -40 0" fill="#c86f6a" opacity="0.6"/>
+    <circle cx="420" cy="290" r="58" fill="url(#roseW)"/>
+    <path d="M398 285 q22 -32 44 0 q-22 28 -44 0" fill="#d8ccb8" opacity="0.8"/>
+    <circle cx="525" cy="370" r="50" fill="url(#rose)"/>
+    <path d="M505 366 q20 -28 40 0 q-20 24 -40 0" fill="#c86f6a" opacity="0.6"/>
+    <circle cx="240" cy="465" r="40" fill="url(#roseW)"/>
+    <circle cx="585" cy="485" r="40" fill="url(#roseW)"/>
+  </g>
+  <path d="M320 600 L480 600 L500 640 C520 720 480 790 400 790 C320 790 280 720 300 640 Z" fill="url(#vase)"/>
+  <path d="M320 600 L480 600" stroke="#d9b86c" stroke-width="6"/>
+  <path d="M312 680 C360 700 440 700 488 680" stroke="#d9b86c" stroke-width="3" fill="none" opacity="0.8"/>
+</svg>

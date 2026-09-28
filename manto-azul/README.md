@@ -34,6 +34,14 @@ npm install
 npm run dev          # http://localhost:3000
 ```
 
+### Testar no celular (mesma rede Wi-Fi)
+
+```bash
+npm run celular      # build + servidor aberto para a rede local na porta 3000
+```
+
+Descubra o IP do computador (Windows: `ipconfig` → “Endereço IPv4”; macOS: `ipconfig getifaddr en0`; Linux: `hostname -I`) e abra `http://SEU-IP:3000` no navegador do celular. Se não abrir, libere a porta 3000 no firewall do computador. Em `http://` o botão “Compartilhar” nativo não aparece no celular (exige HTTPS); ele copia o link automaticamente.
+
 Outros comandos:
 
 ```bash
